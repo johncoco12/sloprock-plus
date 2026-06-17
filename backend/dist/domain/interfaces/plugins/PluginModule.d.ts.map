@@ -1,0 +1,1 @@
+{"version":3,"file":"PluginModule.d.ts","sourceRoot":"","sources":["../../../../src/domain/interfaces/plugins/PluginModule.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,aAAa,EAAE,MAAM,oBAAoB,CAAC;AAExD,MAAM,WAAW,YAAY;IAC3B,KAAK,CAAC,CAAC,GAAG,EAAE,aAAa,GAAG,OAAO,CAAC,IAAI,CAAC,GAAG,IAAI,CAAC;IACjD,QAAQ,CAAC,CAAC,GAAG,EAAE,aAAa,GAAG,OAAO,CAAC,IAAI,CAAC,GAAG,IAAI,CAAC;CACrD"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"RouteRegistrar.d.ts","sourceRoot":"","sources":["../../../src/infrastructure/plugins/RouteRegistrar.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,eAAe,EAAE,MAAM,SAAS,CAAC;AAC/C,OAAO,KAAK,EAAE,iBAAiB,EAA2B,MAAM,kDAAkD,CAAC;AAGnH,qBAAa,cAAc;IACb,OAAO,CAAC,QAAQ,CAAC,OAAO;gBAAP,OAAO,EAAE,eAAe;IAErD,SAAS,CAAC,QAAQ,EAAE,MAAM,GAAG,iBAAiB;CA2B/C"}

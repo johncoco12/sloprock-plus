@@ -1,0 +1,9 @@
+{
+  "id": "format_sloppak",
+  "name": "Sloppak Format",
+  "version": "1.0.0",
+  "bundled": true,
+  "private": true,
+  "server": "index.js",
+  "dependsOn": []
+}

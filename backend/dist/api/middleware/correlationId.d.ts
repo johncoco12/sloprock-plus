@@ -1,0 +1,7 @@
+declare module "fastify" {
+    interface FastifyRequest {
+        correlationId: string;
+    }
+}
+export declare const correlationId: (fastify: import("fastify").FastifyInstance<import("fastify").RawServerDefault, import("http").IncomingMessage, import("http").ServerResponse<import("http").IncomingMessage>, import("fastify").FastifyBaseLogger, import("fastify").FastifyTypeProviderDefault>) => Promise<void>;
+//# sourceMappingURL=correlationId.d.ts.map

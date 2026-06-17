@@ -1,0 +1,78 @@
+name: sloprock-plus
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sloprock
+      POSTGRES_PASSWORD: sloprock
+      POSTGRES_DB: sloprock
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    # Bind only to loopback — required so web (network_mode: host) can reach db
+    # at 127.0.0.1:5432 without exposing Postgres to the LAN.
+    ports:
+      - "127.0.0.1:5432:5432"
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: sloprock
+      MINIO_ROOT_PASSWORD: sloprock123
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    # host networking — required for UDP beacon broadcast to reach the LAN.
+    # Postgres is at 127.0.0.1:5432 (see db.ports above).
+    network_mode: host
+    depends_on:
+      - db
+      - minio
+    volumes:
+      # CDLC library folder on NAS
+      - /volume1/piracy/cdlc:/dlc
+      # Persistent config, cache
+      - sloprock-config:/config
+    environment:
+      - PORT=8085
+      - DLC_DIR=/dlc
+      - CONFIG_DIR=/config
+      - DATABASE_URL=postgresql://sloprock:sloprock@127.0.0.1:5432/sloprock
+      - MINIO_ENDPOINT=127.0.0.1
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=sloprock
+      - MINIO_SECRET_KEY=sloprock123
+      - MINIO_BUCKET=sloprock
+      - MINIO_USE_SSL=false
+      # SlopAudio Connect beacon (optional — defaults shown)
+      # - SAC_SERVER_NAME=SlopRock
+      # - SAC_HTTP_PORT=8085   # override if a reverse proxy exposes a different port
+      # Logging (optional — image defaults: LOG_LEVEL=info, LOG_PRETTY=true)
+      # - LOG_LEVEL=info
+      # - LOG_PRETTY=false
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8006:80"
+    depends_on:
+      - web
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  minio-data:
+  sloprock-config:

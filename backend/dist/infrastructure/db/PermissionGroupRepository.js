@@ -1,0 +1,67 @@
+import { NotFoundError } from "../../domain/errors.js";
+import { prisma } from "./client.js";
+function rowToGroup(row) {
+    return {
+        id: row.id,
+        name: row.name,
+        profileIds: row.profileIds ?? [],
+        permissions: row.permissions ?? [],
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+    };
+}
+export class PermissionGroupRepository {
+    async findById(id) {
+        const row = await prisma.permissionGroup.findUnique({ where: { id } });
+        return row ? rowToGroup(row) : null;
+    }
+    async findByName(name) {
+        const row = await prisma.permissionGroup.findUnique({ where: { name } });
+        return row ? rowToGroup(row) : null;
+    }
+    async findAll() {
+        const rows = await prisma.permissionGroup.findMany({ orderBy: { id: "asc" } });
+        return rows.map(rowToGroup);
+    }
+    async create(input) {
+        const row = await prisma.permissionGroup.create({
+            data: {
+                name: input.name,
+                profileIds: [...(input.profileIds ?? [])],
+                permissions: [...(input.permissions ?? [])],
+            },
+        });
+        return rowToGroup(row);
+    }
+    async update(id, input) {
+        const data = {};
+        if (input.name !== undefined)
+            data.name = input.name;
+        if (input.profileIds !== undefined)
+            data.profileIds = [...input.profileIds];
+        if (input.permissions !== undefined)
+            data.permissions = [...input.permissions];
+        const row = await prisma.permissionGroup.update({ where: { id }, data });
+        return rowToGroup(row);
+    }
+    async delete(id) {
+        await prisma.permissionGroup.delete({ where: { id } }).catch(() => {
+            throw new NotFoundError("PermissionGroup");
+        });
+    }
+    async addProfile(groupId, profileId) {
+        const group = await this.findById(groupId);
+        if (!group)
+            throw new NotFoundError("PermissionGroup");
+        const ids = [...group.profileIds, profileId];
+        return this.update(groupId, { profileIds: ids });
+    }
+    async removeProfile(groupId, profileId) {
+        const group = await this.findById(groupId);
+        if (!group)
+            throw new NotFoundError("PermissionGroup");
+        const ids = group.profileIds.filter((id) => id !== profileId);
+        return this.update(groupId, { profileIds: ids });
+    }
+}
+//# sourceMappingURL=PermissionGroupRepository.js.map

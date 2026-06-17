@@ -1,0 +1,34 @@
+export declare const config: {
+    readonly port: number;
+    readonly host: string;
+    readonly logLevel: "trace" | "debug" | "info" | "warn" | "error";
+    readonly logPretty: boolean;
+    readonly demoMode: boolean;
+    readonly electronMode: boolean;
+    readonly dlcDir: string | undefined;
+    readonly rscliPath: string | undefined;
+    readonly vgmstreamCli: string | undefined;
+    readonly appSourceUrl: string;
+    readonly appLicenseUrl: string;
+    readonly version: string;
+    readonly configDir: string;
+    readonly minioEndpoint: string | undefined;
+    readonly minioPort: number | undefined;
+    readonly minioAccessKey: string | undefined;
+    readonly minioSecretKey: string | undefined;
+    readonly minioBucket: string;
+    readonly minioUseSSL: boolean;
+    readonly databaseUrl: string;
+    readonly settingsPath: string;
+    readonly audioCacheDir: string;
+    readonly artCacheDir: string;
+    readonly sloppakCacheDir: string;
+    readonly pluginsBuiltinDir: string;
+    readonly pluginsUserDir: string | undefined;
+    readonly staticDir: string;
+    readonly sacServerName: string;
+    readonly sacServerIp: string | undefined;
+    readonly sacHttpPort: number;
+};
+export type Config = typeof config;
+//# sourceMappingURL=config.d.ts.map

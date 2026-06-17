@@ -1,0 +1,40 @@
+import type { FastifyBaseLogger } from "fastify";
+import type { PluginStatus } from "../../domain/models/plugin.js";
+import type { PluginRegistry } from "./PluginRegistry.js";
+import type { HookSystem } from "./HookSystem.js";
+import type { ProviderRegistry } from "./ProviderRegistry.js";
+import type { PermissionRegistry } from "./PermissionRegistry.js";
+import type { PluginDbFactory } from "./PluginDb.js";
+import type { RouteRegistrar } from "./RouteRegistrar.js";
+import type { Config } from "../../config.js";
+export declare class PluginLifecycle {
+    private readonly registry;
+    private readonly hooks;
+    private readonly providers;
+    private readonly permissions;
+    private readonly dbFactory;
+    private readonly routeRegistrar;
+    private readonly config;
+    private readonly logger;
+    private readonly state;
+    private readonly modules;
+    private readonly errors;
+    private readonly disabled;
+    private loadOrder;
+    private readonly disabledPath;
+    constructor(registry: PluginRegistry, hooks: HookSystem, providers: ProviderRegistry, permissions: PermissionRegistry, dbFactory: PluginDbFactory, routeRegistrar: RouteRegistrar, config: Config, logger: FastifyBaseLogger);
+    start(): Promise<void>;
+    enable(id: string): Promise<void>;
+    disable(id: string): Promise<void>;
+    isDisabled(id: string): boolean;
+    private loadDisabledSet;
+    private saveDisabledSet;
+    shutdown(): Promise<void>;
+    getStatus(): PluginStatus[];
+    private loadOne;
+    private teardownOne;
+    private importModule;
+    private buildContext;
+    private topoSort;
+}
+//# sourceMappingURL=PluginLifecycle.d.ts.map

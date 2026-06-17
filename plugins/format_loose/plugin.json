@@ -1,0 +1,9 @@
+{
+  "id": "format_loose",
+  "name": "Loose Folder Format",
+  "version": "1.0.0",
+  "bundled": true,
+  "private": true,
+  "server": "index.js",
+  "dependsOn": []
+}

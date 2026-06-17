@@ -1,0 +1,23 @@
+{
+    "hide-files.files": [
+        "vue-frontend/dist",
+        ".github",
+        ".vscode",
+        "frontend/dist",
+        "frontend/node_modules",
+        "static"
+    ],
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "vue-frontend/dist": true,
+        ".github": true,
+        ".vscode": true,
+        "frontend/dist": true,
+        "frontend/node_modules": true,
+        "static": true
+    }
+}

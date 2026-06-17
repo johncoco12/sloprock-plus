@@ -1,0 +1,110 @@
+name: sloprock-plus
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sloprock
+      POSTGRES_PASSWORD: sloprock
+      POSTGRES_DB: sloprock
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sloprock"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: sloprock
+      MINIO_ROOT_PASSWORD: sloprock123
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    # host networking lets the UDP beacon broadcast reach the real LAN so that
+    # SlopAudio-Connect instances can auto-discover this server. All SAC UDP
+    # ports (54920-54922) are available on the host interface directly.
+    # Trade-off: Docker service names (db, minio) no longer resolve —
+    # see the 127.0.0.1 overrides in environment below.
+    network_mode: host
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    volumes:
+      - ${DLC_PATH:-./dlc}:/dlc
+      - app-config:/config
+      # Bundled plugins and static assets.
+      # In dev these are live-mounted so edits are picked up on server restart.
+      # For a production image build, comment these three lines out — the assets
+      # are baked in via `COPY plugins/` and `COPY static/` in the Dockerfile.
+      - ./plugins:/app/plugins
+      - ./static:/app/static
+      - ./VERSION:/app/VERSION
+      # User-installed plugins: drop a plugin folder here and restart the server.
+      # This volume persists across image upgrades, so user plugins are never lost.
+      - user-plugins:/app/user-plugins
+    environment:
+      - PORT=8085
+      - DLC_DIR=/dlc
+      - CONFIG_DIR=/config
+      # 127.0.0.1 instead of service names — required with network_mode: host
+      - DB_HOST=127.0.0.1
+      - DB_PORT=5432
+      - DATABASE_URL=postgresql://sloprock:sloprock@127.0.0.1:5432/sloprock
+      - MINIO_ENDPOINT=127.0.0.1
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=sloprock
+      - MINIO_SECRET_KEY=sloprock123
+      - MINIO_BUCKET=sloprock
+      - MINIO_USE_SSL=false
+      # User plugin directory — plugins placed here are loaded alongside bundled ones.
+      - SLOPROCK_PLUGINS_DIR=/app/user-plugins
+      # SlopAudio Connect beacon (optional — defaults shown)
+      # - SAC_SERVER_NAME=SlopRock
+      # - SAC_HTTP_PORT=8085   # override if a reverse proxy exposes a different port
+      # Logging (optional — image defaults: LOG_LEVEL=info, LOG_PRETTY=true)
+      # - LOG_LEVEL=debug
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8006:80"
+    depends_on:
+      - web
+    extra_hosts:
+      # resolves host.docker.internal → Docker host gateway so nginx can proxy
+      # to the web service which now runs with network_mode: host
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  postgres-data:
+    name: sloprock-postgres
+  minio-data:
+    name: sloprock-minio
+  app-config:
+    name: sloprock-config
+  user-plugins:
+    name: sloprock-user-plugins
+

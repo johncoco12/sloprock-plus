@@ -1,0 +1,345 @@
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { Heart, Play, MoreVertical, Pencil, Trash2 } from 'lucide-vue-next'
+import type { Song } from '@/types'
+import PluginSlot from '@/components/plugins/PluginSlot.vue'
+
+const props = defineProps<{
+  song: Song & { mtime?: number; favorite?: boolean; tuningName?: string; trackId?: string }
+  selected?: boolean
+}>()
+
+const emit = defineEmits<{
+  open:            [song: Song]
+  favorite:        [trackId: string]
+  edit:            [song: Song]
+  delete:          [song: Song]
+  'filter-artist': [artist: string]
+}>()
+
+const { t } = useI18n()
+
+const FORMAT_COLOR: Record<string, string> = {
+  sloppak: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
+  loose:   'bg-gray-500/15 text-gray-400 border-gray-500/30',
+}
+
+const artUrl = computed(() =>
+  props.song.trackId
+    ? `/api/tracks/${encodeURIComponent(props.song.trackId)}/cover`
+    : `/api/song/${encodeURIComponent(props.song.filename)}/art?t=${props.song.mtime ?? 0}`
+)
+
+const arrNames = computed(() =>
+  (props.song.arrangements ?? []).map((a: unknown) =>
+    (typeof a === 'object' && a !== null && 'name' in a)
+      ? (a as { name: string }).name
+      : String(a)
+  )
+)
+
+const scoreGrade = computed(() => {
+  const s = props.song.bestScore
+  if (s == null) return ''
+  if (s >= 95) return 'S'
+  if (s >= 80) return 'A'
+  if (s >= 60) return 'B'
+  if (s >= 40) return 'C'
+  return 'D'
+})
+
+const scoreBadgeClass = computed(() => {
+  const g = scoreGrade.value
+  if (g === 'S') return 'score-s'
+  if (g === 'A') return 'score-a'
+  if (g === 'B') return 'score-b'
+  if (g === 'C') return 'score-c'
+  return 'score-d'
+})
+
+const favBurst = ref(false)
+
+function onFavorite() {
+  favBurst.value = false
+  requestAnimationFrame(() => {
+    favBurst.value = true
+    setTimeout(() => { favBurst.value = false }, 600)
+  })
+  emit('favorite', props.song.trackId ?? props.song.filename)
+}
+
+const menuOpen = ref(false)
+
+function openMenu(e: Event) {
+  e.stopPropagation()
+  menuOpen.value = true
+}
+
+function closeMenu() { menuOpen.value = false }
+
+function onEdit(e: Event) {
+  e.stopPropagation()
+  closeMenu()
+  emit('edit', props.song)
+}
+
+function onDelete(e: Event) {
+  e.stopPropagation()
+  closeMenu()
+  emit('delete', props.song)
+}
+</script>
+
+<template>
+  <div v-if="menuOpen" class="fixed inset-0 z-20" @click="closeMenu" @contextmenu.prevent="closeMenu" />
+
+  <article
+    class="song-card group"
+    :class="{ selected, 'z-50': menuOpen }"
+    tabindex="0"
+    :aria-label="`${song.title} by ${song.artist}`"
+    @click="emit('open', song)"
+    @keydown.enter="emit('open', song)"
+    @keydown.space.prevent="emit('open', song)"
+  >
+    <div class="card-art">
+      <img
+        :src="artUrl"
+        :alt="`${song.title} cover`"
+        loading="lazy"
+        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        @error="($event.target as HTMLImageElement).style.display = 'none'"
+      />
+      <div class="absolute inset-0 flex items-center justify-center text-4xl select-none -z-10" aria-hidden="true">🎸</div>
+
+      <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+        <div class="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center ring-1 ring-white/20 shadow-lg">
+          <Play :size="20" class="text-white translate-x-0.5" fill="currentColor" />
+        </div>
+      </div>
+
+      <div class="absolute top-2 left-2 z-30">
+        <button
+          class="p-1.5 rounded-full bg-black/60 backdrop-blur-sm text-fg-muted hover:text-fg transition-all duration-150"
+          :class="menuOpen ? 'opacity-100 scale-100' : 'opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100'"
+          :aria-label="t('library.song.options', 'Options')"
+          @click="openMenu"
+        >
+          <MoreVertical :size="15" />
+        </button>
+
+        <Transition name="menu">
+          <div
+            v-if="menuOpen"
+            class="absolute top-full left-0 mt-1.5 z-30 w-44 rounded-xl bg-dark-700 border border-line/10 shadow-2xl overflow-hidden py-1 menu-dropdown"
+            @click.stop
+          >
+            <button class="menu-item" @click="onEdit">
+              <Pencil :size="13" class="text-fg-muted shrink-0" />
+              <span>Edit metadata</span>
+            </button>
+            <div class="mx-3 my-1 border-t border-line/[.06]" />
+            <button class="menu-item menu-danger" @click="onDelete">
+              <Trash2 :size="13" class="shrink-0" />
+              <span>Delete</span>
+            </button>
+          </div>
+        </Transition>
+      </div>
+
+      <button
+        class="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-black/60 backdrop-blur-sm transition-all duration-150"
+:class="song.favorite
+           ? 'opacity-100 text-rose-400'
+           : 'opacity-0 group-hover:opacity-100 text-fg-muted hover:text-rose-400'"
+        :aria-label="song.favorite ? t('library.song.removeFavorite') : t('library.song.addFavorite')"
+        @click.stop="onFavorite"
+      >
+        <span v-if="favBurst" class="fav-burst" aria-hidden="true" />
+        <Heart
+          :size="16"
+          :fill="song.favorite ? 'currentColor' : 'none'"
+          stroke-width="2"
+          class="relative z-10"
+          :class="favBurst ? 'fav-pop' : ''"
+        />
+      </button>
+    </div>
+
+    <div class="p-3 space-y-1">
+      <div class="flex items-center gap-1.5 min-w-0">
+        <p class="text-sm font-semibold text-gray-100 truncate leading-snug flex-1">{{ song.title }}</p>
+        <span
+          v-if="song.bestScore != null"
+          class="score-badge shrink-0"
+          :class="scoreBadgeClass"
+          :title="`Best score: ${song.bestScore}%`"
+        >{{ scoreGrade }}</span>
+        <PluginSlot name="library-card-badge" :song="song" />
+      </div>
+
+      <p class="text-xs text-gray-400 truncate">
+        <button
+          class="hover:text-gray-200 hover:underline underline-offset-2 transition-colors text-left"
+          :title="t('library.song.filterByArtist', { artist: song.artist })"
+          @click.stop="emit('filter-artist', song.artist)"
+        >{{ song.artist }}</button>
+      </p>
+
+      <div class="flex flex-wrap gap-1 pt-1.5">
+        <span
+          v-if="song.format"
+          class="pill border"
+          :class="FORMAT_COLOR[song.format] ?? FORMAT_COLOR.loose"
+        >{{ song.format }}</span>
+
+        <span
+          v-for="name in arrNames"
+          :key="name"
+          class="pill bg-dark-500 text-gray-300 border border-white/[.08]"
+        >{{ name }}</span>
+
+        <span
+          v-if="song.tuningName"
+          class="pill bg-dark-500 text-teal-400 border border-teal-700/40"
+        >{{ song.tuningName }}</span>
+      </div>
+    </div>
+  </article>
+</template>
+
+<style scoped>
+.song-card {
+  position: relative;
+  background: theme('colors.dark.700');
+  border: 1px solid theme('colors.white / 0.06');
+  border-radius: 0.875rem;
+  overflow: visible;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  outline: none;
+}
+.song-card:hover,
+.song-card:focus-visible {
+  box-shadow: 0 8px 32px -8px rgb(0 0 0 / 0.55);
+  transform: translateY(-2px);
+  border-color: theme('colors.white / 0.13');
+}
+.song-card.selected {
+  border-color: theme('colors.accent.DEFAULT', '#4080e0');
+  box-shadow: 0 0 0 2px theme('colors.accent.DEFAULT', '#4080e0');
+}
+
+/* clip art corners separately so overflow: visible works for the menu */
+.card-art {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: theme('colors.dark.600');
+  overflow: hidden;
+  border-radius: 0.875rem 0.875rem 0 0;
+}
+
+.pill {
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.fav-burst {
+  position: absolute;
+  inset: -5px;
+  border-radius: 9999px;
+  border: 2px solid #fb7185;
+  animation: burst 0.55s ease-out forwards;
+  pointer-events: none;
+}
+
+.fav-pop { animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+@keyframes burst {
+  0%   { transform: scale(0.5); opacity: 1; }
+  60%  { transform: scale(1.7); opacity: 0.35; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+@keyframes pop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.5); }
+  100% { transform: scale(1); }
+}
+
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+.score-s { background: #7c3aed22; color: #a78bfa; border: 1px solid #7c3aed55; }
+.score-a { background: #065f4622; color: #34d399; border: 1px solid #06503255; }
+.score-b { background: #1e3a8a22; color: #60a5fa; border: 1px solid #1e3a8a55; }
+.score-c { background: #92400e22; color: #fbbf24; border: 1px solid #92400e55; }
+.score-d { background: #7f1d1d22; color: #f87171; border: 1px solid #7f1d1d55; }
+
+.menu-enter-active { transition: opacity 0.12s ease, transform 0.12s ease; }
+.menu-leave-active { transition: opacity 0.08s ease; }
+.menu-enter-from   { opacity: 0; transform: scale(0.95) translateY(-4px); }
+.menu-leave-to     { opacity: 0; }
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  color: theme('colors.fg.DEFAULT');
+  text-align: left;
+  transition: background-color 0.1s;
+}
+.menu-item:hover { background: rgb(var(--line) / 0.06); }
+
+.menu-danger { color: theme('colors.danger'); }
+.menu-danger:hover { background: rgb(var(--danger) / 0.1); }
+
+
+/* Card border */
+:global(html.theme-light) .song-card {
+  border-color: rgba(0,0,0,0.10);
+}
+:global(html.theme-light) .song-card:hover,
+:global(html.theme-light) .song-card:focus-visible {
+  border-color: rgba(0,0,0,0.18);
+  box-shadow: 0 8px 32px -8px rgb(0 0 0 / 0.12);
+}
+
+/*
+ * Card-art overlay elements (⋮ menu button, ♥ fav button, play circle) all sit
+ * on top of bg-black/60 or bg-black/40 circles/overlays so their text must stay
+ * light regardless of theme — the global html.theme-light overrides must not reach them.
+ */
+:global(html.theme-light) .card-art .text-white          { color: rgb(255 255 255); }
+:global(html.theme-light) .card-art .text-fg             { color: rgb(255 255 255); }
+:global(html.theme-light) .card-art .text-fg-muted       { color: rgb(209 213 219); }
+:global(html.theme-light) .card-art .hover\:text-fg:hover { color: rgb(255 255 255); }
+:global(html.theme-light) .card-art .hover\:text-white:hover { color: rgb(255 255 255); }
+:global(html.theme-light) .card-art .bg-white\/10        { background-color: rgba(255,255,255,0.10); }
+
+/*
+ * Score badges use light pastels (contrast ratio < 3:1 on white) — remap to
+ * darker shades of the same hue so they stay readable on light card backgrounds.
+ */
+:global(html.theme-light) .score-s { background: rgba(124,58,237,0.12); color: #5b21b6; border-color: rgba(124,58,237,0.35); }
+:global(html.theme-light) .score-a { background: rgba(5,150,105,0.12);  color: #065f46; border-color: rgba(5,150,105,0.35);  }
+:global(html.theme-light) .score-b { background: rgba(37,99,235,0.12);  color: #1e40af; border-color: rgba(37,99,235,0.35);  }
+:global(html.theme-light) .score-c { background: rgba(217,119,6,0.12);  color: #92400e; border-color: rgba(217,119,6,0.35);  }
+:global(html.theme-light) .score-d { background: rgba(220,38,38,0.12);  color: #991b1b; border-color: rgba(220,38,38,0.35);  }
+</style>

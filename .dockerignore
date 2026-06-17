@@ -1,0 +1,53 @@
+*
+
+!.dockerignore
+!VERSION
+
+# Backend (Node.js/TypeScript + rscli tool source)
+!backend/
+!backend/**
+
+# Static assets served by the backend
+!static/
+!static/**
+static/*.ogg
+static/*.mp3
+static/*.wav
+static/art/
+static/audio_*/
+static/sloppak_cache/
+static/note_detect_recordings/
+
+# Plugins — only __init__.py and in-tree core plugins
+!plugins/
+plugins/*/
+!plugins/__init__.py
+!plugins/highway_3d/
+!plugins/highway_3d/**
+!plugins/app_tour_library/
+!plugins/app_tour_library/**
+!plugins/app_tour_settings/
+!plugins/app_tour_settings/**
+!plugins/pitch_yin/
+!plugins/pitch_yin/**
+!plugins/format_sloppak/
+!plugins/format_sloppak/**
+!plugins/format_loose/
+!plugins/format_loose/**
+
+# Strip developer artifacts even inside whitelisted trees
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/node_modules/
+**/.venv/
+**/venv/
+**/.env
+**/.env.*
+**/.DS_Store
+# .NET + TypeScript build outputs (rebuilt from source in the image)
+**/bin/
+**/obj/
+**/dist/
