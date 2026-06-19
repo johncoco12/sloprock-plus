@@ -155,21 +155,30 @@ export class SongRepository implements ISongRepository {
         ? { AND: [where, validSet] }
         : validSet;
 
+    if (hasPostFilters(query)) {
+      // Post-filters operate on JSON columns that can't be pushed to the DB.
+      // Count first so the subsequent findMany is bounded to the actual row count.
+      const total = await prisma.song.count({ where: withValid });
+      const rows = await prisma.song.findMany({ where: withValid, orderBy, take: total || 1 });
+      const filtered = rows.filter((r) => matchesPostFilters(r, query));
+      const page = filtered.slice(skip, skip + query.size);
+      const trackIdMap = await this.getTrackIdMap(page.map((r) => r.filename));
+      return {
+        items: page.map((r) => rowToMeta(r, favorites, trackIdMap)),
+        total: filtered.length,
+        page: query.page,
+        size: query.size,
+      };
+    }
+
     const [rows, total] = await Promise.all([
-      prisma.song.findMany({ where: withValid, orderBy }),
+      prisma.song.findMany({ where: withValid, orderBy, skip, take: query.size }),
       prisma.song.count({ where: withValid }),
     ]);
-
-    const filtered = hasPostFilters(query)
-      ? rows.filter((r) => matchesPostFilters(r, query))
-      : rows;
-
-    const page = filtered.slice(skip, skip + query.size);
-    const trackIdMap = await this.getTrackIdMap(page.map((r) => r.filename));
-
+    const trackIdMap = await this.getTrackIdMap(rows.map((r) => r.filename));
     return {
-      items: page.map((r) => rowToMeta(r, favorites, trackIdMap)),
-      total: hasPostFilters(query) ? filtered.length : total,
+      items: rows.map((r) => rowToMeta(r, favorites, trackIdMap)),
+      total,
       page: query.page,
       size: query.size,
     };

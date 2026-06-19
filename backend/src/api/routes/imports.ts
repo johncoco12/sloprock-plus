@@ -1,6 +1,7 @@
 import fp from "fastify-plugin";
 import path from "node:path";
 import fs from "node:fs/promises";
+import { config } from "../../config.js";
 import type { ImportService } from "../../services/ImportService.js";
 import type { IImportFormatProvider } from "../../domain/interfaces/providers/IImportFormatProvider.js";
 import { IMPORT_FORMAT_PROVIDER_TYPE } from "../../domain/interfaces/providers/IImportFormatProvider.js";
@@ -16,7 +17,7 @@ export const importRoutes = fp(async function importRoutes(fastify) {
   }, async (req, reply) => {
     const parts = req.files({ limits: { fileSize: 256 * 1024 * 1024 } });
     const session = req.session!;
-    const dlcDir = process.env.DLC_DIR;
+    const dlcDir = config.dlcDir;
     if (!dlcDir) return reply.code(500).send({ error: "DLC_DIR not configured" });
 
     const providers = fastify.providerRegistry.getAll<IImportFormatProvider>(IMPORT_FORMAT_PROVIDER_TYPE);

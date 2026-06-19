@@ -1,6 +1,6 @@
 
 export const SCALE = 2.25;
-export const K = SCALE / 300;
+export const K = SCALE / 300; // world-space unit — multiply physical sizes by K to keep them in scene scale
 
 export const NFRETS = 24;
 export const NSTR = 6;
@@ -22,15 +22,15 @@ export const PALETTES = {
 } as const;
 
 export const STR_THICK = 0.25 * K;
-export const S_BASE = 3 * K;
-export const S_GAP = 4 * K;
-export const NW = 5 * K;
-export const NH = 3 * K;
-export const ND = 0.5 * K;
+export const S_BASE = 3 * K;  // Y position of string 0
+export const S_GAP = 4 * K;   // vertical gap between strings
+export const NW = 5 * K;      // note width (X)
+export const NH = 3 * K;      // note height (Y)
+export const ND = 0.5 * K;    // note depth (Z)
 
-export const AHEAD = 4.0;
-export const BEHIND = 0.5;
-export const TS = 130 * K;
+export const AHEAD = 4.0;     // seconds of highway visible ahead of the strum line
+export const BEHIND = 0.5;    // seconds visible behind the strum line
+export const TS = 130 * K;    // time-to-Z scale: seconds × TS = world-space depth
 
 export const CAM_H_BASE = 150 * K;
 export const CAM_DIST_BASE = 240 * K;
@@ -41,8 +41,8 @@ export const CAM_LERP_BASE = 0.02;
 export const FOG_START = 200 * K;
 export const FOG_END = 670 * K;
 
-export const DOTS = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24];
-export const DDOTS = new Set([12, 24]);
+export const DOTS = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24]; // fret inlay positions
+export const DDOTS = new Set([12, 24]);                    // double-dot frets
 
 export const HWY_LANE_STRIPE_ODD_HEX = 0x3d739e;
 export const HWY_LANE_STRIPE_EVEN_HEX = 0x62a5d8;
@@ -66,10 +66,12 @@ export function fretMid(f: number): number {
   return f <= 0 ? -2 * K : (fretX(f - 1) + fretX(f)) / 2;
 }
 
+/** Convert a time delta (seconds) to a Z-axis offset in world space. */
 export function dZ(dt: number): number {
   return -dt * TS;
 }
 
+/** Return the Y world-space position for string index s. */
 export function sY(s: number, stringCount: number, inverted: boolean): number {
   const base = S_BASE + s * S_GAP;
   return inverted ? S_BASE + (stringCount - 1) * S_GAP - base + S_BASE : base;
@@ -83,6 +85,7 @@ export function resolveStringCount(songInfo: { stringCount?: number; arrangement
   return /bass/i.test(songInfo?.arrangement ?? '') ? 4 : NSTR;
 }
 
+/** Binary search: returns the index of the first element whose `.t` field is >= t. */
 export function lowerBoundT<T extends { t: number }>(arr: T[], t: number): number {
   let lo = 0, hi = arr.length;
   while (lo < hi) {

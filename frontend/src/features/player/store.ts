@@ -83,10 +83,12 @@ export const usePlayerStore = defineStore('player', () => {
         audio.src = newSrc
         audio.load()
       }
-      await new Promise<void>(resolve => {
+      await new Promise<void>((resolve, reject) => {
         if (audio.readyState >= 2) { resolve(); return }
-        const onReady = () => { audio.removeEventListener('canplay', onReady); resolve() }
+        const onReady = () => { audio.removeEventListener('canplay', onReady); audio.removeEventListener('error', onError); resolve() }
+        const onError = () => { audio.removeEventListener('canplay', onReady); audio.removeEventListener('error', onError); reject(new Error('Audio failed to load')) }
         audio.addEventListener('canplay', onReady)
+        audio.addEventListener('error', onError)
       })
     }
 

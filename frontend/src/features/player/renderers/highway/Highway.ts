@@ -8,7 +8,7 @@ import { RendererManager } from '@/features/player/renderers/RendererManager';
 import { HighwayRestClient } from '@/features/player/api';
 import { resolveNoteState } from '@/features/player/engine/noteState';
 import type {
-  HighwayApi, ConnectOptions, Renderer, DrawHook, RenderBundle,
+  HighwayApi, ConnectOptions, CanvasRenderer, DrawHook, RenderBundle,
   NoteStateProvider, NoteState, ChartNote, ChartChordNote,
   Beat, ChartChord, Section, Anchor, ChordTemplate, Lyric, ToneChange,
   HandShape, SongInfo,
@@ -181,7 +181,7 @@ export class Highway implements HighwayApi {
   getLefty(): boolean { return this.lefty; }
 
 
-  setRenderer(r: Renderer | null): void { this.rendererMgr.setRenderer(r); }
+  setRenderer(r: CanvasRenderer | null): void { this.rendererMgr.setRenderer(r); }
   isDefaultRenderer(): boolean { return this.rendererMgr.isDefault(); }
 
 

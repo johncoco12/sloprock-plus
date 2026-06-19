@@ -43,32 +43,32 @@ const parser = new XMLParser({
   isArray: (name) => ARRAY_TAGS.has(name),
 });
 
-type El = Record<string, unknown>;
+type XmlNode = Record<string, unknown>;
 
-function num(el: El, key: string, fallback = 0): number {
+function num(el: XmlNode, key: string, fallback = 0): number {
   const v = el[`@_${key}`] ?? el[key];
   if (v === undefined || v === null) return fallback;
   const n = Number(v);
   return isNaN(n) ? fallback : n;
 }
 
-function bool(el: El, key: string): boolean {
+function bool(el: XmlNode, key: string): boolean {
   const v = el[`@_${key}`];
   return v === 1 || v === "1" || v === true || v === "true";
 }
 
-function str(el: El, key: string, fallback = ""): string {
+function str(el: XmlNode, key: string, fallback = ""): string {
   const v = el[`@_${key}`] ?? el[key];
   return v !== undefined && v !== null ? String(v) : fallback;
 }
 
-function arr<T>(el: El, ...path: string[]): T[] {
+function arr<T>(el: XmlNode, ...path: string[]): T[] {
   let cur: unknown = el;
-  for (const p of path) cur = (cur as El)?.[p];
+  for (const p of path) cur = (cur as XmlNode)?.[p];
   return Array.isArray(cur) ? (cur as T[]) : [];
 }
 
-function parseNote(el: El): Note {
+function parseNote(el: XmlNode): Note {
   return {
     time: num(el, "time"),
     string: num(el, "string"),
@@ -91,7 +91,7 @@ function parseNote(el: El): Note {
   };
 }
 
-function parseChordNote(el: El): ChordNote {
+function parseChordNote(el: XmlNode): ChordNote {
   return {
     string: num(el, "string"),
     fret: num(el, "fret"),
@@ -113,8 +113,8 @@ function parseChordNote(el: El): ChordNote {
   };
 }
 
-function parseChord(el: El): Chord {
-  const chordNotes = arr<El>(el, "chordNote").map(parseChordNote);
+function parseChord(el: XmlNode): Chord {
+  const chordNotes = arr<XmlNode>(el, "chordNote").map(parseChordNote);
   return {
     time: num(el, "time"),
     chordId: num(el, "chordId"),
@@ -123,11 +123,11 @@ function parseChord(el: El): Chord {
   };
 }
 
-function parseAnchor(el: El): Anchor {
+function parseAnchor(el: XmlNode): Anchor {
   return { time: num(el, "time"), fret: num(el, "fret"), width: num(el, "width", 4) };
 }
 
-function checkArpeggio(el: El): boolean {
+function checkArpeggio(el: XmlNode): boolean {
   for (const attr of ["arpeggio", "Arpeggio", "arp", "Arp"]) {
     const v = el[attr];
     if (v !== undefined && v !== "" && v !== "0" && v !== "false" && v !== "False" && v !== "FALSE") return true;
@@ -135,14 +135,14 @@ function checkArpeggio(el: El): boolean {
   return false;
 }
 
-function checkChordTemplateArpeggio(ct: El): boolean {
+function checkChordTemplateArpeggio(ct: XmlNode): boolean {
   if (checkArpeggio(ct)) return true;
   const displayName = str(ct, "displayName", "");
   const lowered = displayName.toLowerCase();
   return lowered.includes("-arp") || lowered.includes("arpeggio");
 }
 
-function parseHandShape(el: El): HandShape {
+function parseHandShape(el: XmlNode): HandShape {
   return {
     chordId: num(el, "chordId"),
     startTime: num(el, "startTime"),
@@ -151,13 +151,13 @@ function parseHandShape(el: El): HandShape {
   };
 }
 
-function parseLevel(el: El): PhraseLevel {
+function parseLevel(el: XmlNode): PhraseLevel {
   return {
     difficulty: num(el, "difficulty"),
-    notes: arr<El>(el, "notes", "note").map(parseNote),
-    chords: arr<El>(el, "chords", "chord").map(parseChord),
-    anchors: arr<El>(el, "anchors", "anchor").map(parseAnchor),
-    handShapes: arr<El>(el, "handShapes", "handShape").map(parseHandShape),
+    notes: arr<XmlNode>(el, "notes", "note").map(parseNote),
+    chords: arr<XmlNode>(el, "chords", "chord").map(parseChord),
+    anchors: arr<XmlNode>(el, "anchors", "anchor").map(parseAnchor),
+    handShapes: arr<XmlNode>(el, "handShapes", "handShape").map(parseHandShape),
   };
 }
 
@@ -174,17 +174,17 @@ export interface ParsedSongRoot {
 
 export function parseSongRoot(xml: string): ParsedSongRoot | null {
   const doc = parser.parse(xml);
-  const root = (doc["song"] ?? doc["Song"]) as El | undefined;
+  const root = (doc["song"] ?? doc["Song"]) as XmlNode | undefined;
   if (!root) return null;
 
   const beats: Beat[] = root["ebeats"]
-    ? arr<El>(root, "ebeats", "beat").map((b) => ({
+    ? arr<XmlNode>(root, "ebeats", "beat").map((b) => ({
         time: num(b, "time"),
         measure: num(b, "measure", -1),
       }))
     : [];
 
-  const sections: Section[] = arr<El>(root, "sections", "section").map((s) => ({
+  const sections: Section[] = arr<XmlNode>(root, "sections", "section").map((s) => ({
     name: str(s, "name"),
     number: num(s, "number"),
     startTime: num(s, "startTime"),
@@ -223,7 +223,7 @@ export function arrangementDisplayName(
 export function extractArrNameFromXml(xml: string): string | null {
   try {
     const doc = parser.parse(xml);
-    const root = (doc["song"] ?? doc["Song"]) as El | undefined;
+    const root = (doc["song"] ?? doc["Song"]) as XmlNode | undefined;
     if (!root) return null;
     const rawName = str(root, "arrangement", "");
     return rawName ? arrangementDisplayName(rawName) : null;
@@ -242,15 +242,15 @@ export function sortArrangementsByPriority<T extends { name: string }>(arrs: T[]
 
 export function parseArrangementXml(xml: string, arrangementName?: string): Arrangement {
   const doc = parser.parse(xml);
-  const root = (doc["song"] ?? doc["Song"]) as El | undefined;
+  const root = (doc["song"] ?? doc["Song"]) as XmlNode | undefined;
   if (!root) throw new Error("Not a song arrangement XML");
 
   // Tuning. RS XML has string0..string5; extended-range instruments (7/8-string
   // guitar, 5-string bass) add string6+ attributes.
-  const tuningEl = root["tuning"] as El | undefined;
+  const tuningEl = root["tuning"] as XmlNode | undefined;
   const rawName = str(root, "arrangement", "");
   const name = arrangementName ?? arrangementDisplayName(rawName);
-  function readStringRange(el: El, prefix: string, defaultVal: number, count?: number): number[] {
+  function readStringRange(el: XmlNode, prefix: string, defaultVal: number, count?: number): number[] {
     if (count !== undefined) {
       return Array.from({ length: count }, (_, i) => num(el, `${prefix}${i}`, defaultVal));
     }
@@ -273,7 +273,7 @@ export function parseArrangementXml(xml: string, arrangementName?: string): Arra
 
   const capo = num(root, "capo");
 
-  const allLevels = arr<El>(root, "levels", "level").map(parseLevel);
+  const allLevels = arr<XmlNode>(root, "levels", "level").map(parseLevel);
   // Find the highest difficulty level that has notes (some DDC-created
   // arrangements pad high difficulties with 0-note, chord-only ghost levels)
   const levelsWithNotes = allLevels.filter((l) => l.notes.length > 0);
@@ -283,7 +283,7 @@ export function parseArrangementXml(xml: string, arrangementName?: string): Arra
   const topLevel = allLevels.find((l) => l.difficulty === maxDifficulty) ?? allLevels[0];
 
   // Chord templates. RS XML names fret0..finger5; extended-range adds fret6+.
-  const chordTemplates: ChordTemplate[] = arr<El>(root, "chordTemplates", "chordTemplate").map((ct) => ({
+  const chordTemplates: ChordTemplate[] = arr<XmlNode>(root, "chordTemplates", "chordTemplate").map((ct) => ({
     name: str(ct, "chordName"),
     displayName: str(ct, "displayName"),
     arpeggio: checkChordTemplateArpeggio(ct),
@@ -321,7 +321,7 @@ export function parseArrangementXml(xml: string, arrangementName?: string): Arra
   }
 
   const toneBase = str(root, "tonebase", "");
-  const toneChanges = arr<El>(root, "tones", "tone").map((t) => ({
+  const toneChanges = arr<XmlNode>(root, "tones", "tone").map((t) => ({
     time: num(t, "time"),
     name: str(t, "name"),
   }));
@@ -343,9 +343,9 @@ export function parseArrangementXml(xml: string, arrangementName?: string): Arra
   };
 }
 
-function buildPhrases(root: El, allLevels: PhraseLevel[], maxDifficulty: number): Phrase[] {
-  const iterations = arr<El>(root, "phraseIterations", "phraseIteration");
-  const definitions = arr<El>(root, "phrases", "phrase");
+function buildPhrases(root: XmlNode, allLevels: PhraseLevel[], maxDifficulty: number): Phrase[] {
+  const iterations = arr<XmlNode>(root, "phraseIterations", "phraseIteration");
+  const definitions = arr<XmlNode>(root, "phrases", "phrase");
 
   if (iterations.length < 2) return [];
 
@@ -375,9 +375,9 @@ function buildPhrases(root: El, allLevels: PhraseLevel[], maxDifficulty: number)
 
 export function parseLyricsXml(xml: string): LyricWord[] {
   const doc = parser.parse(xml);
-  const root = (doc["vocals"] ?? doc["Vocals"]) as El | undefined;
+  const root = (doc["vocals"] ?? doc["Vocals"]) as XmlNode | undefined;
   if (!root) return [];
-  return arr<El>(root, "vocal").map((v) => ({
+  return arr<XmlNode>(root, "vocal").map((v) => ({
     t: num(v, "time"),
     d: num(v, "length"),
     w: str(v, "lyric"),
@@ -425,7 +425,7 @@ function phraseFromWire(d: Record<string, unknown>): Phrase {
   };
 }
 
-export function arrangementFromWireJson(data: El): Arrangement {
+export function arrangementFromWireJson(data: XmlNode): Arrangement {
   const tuning = (data["tuning"] as number[]) ?? [0, 0, 0, 0, 0, 0];
 
   return {
@@ -482,169 +482,3 @@ export function arrangementFromWireJson(data: El): Arrangement {
   };
 }
 
-import { execSync } from "node:child_process";
-import fs from "node:fs";
-import path from "node:path";
-import type { Song } from "../../domain/models/song.js";
-
-function hasArrangementXml(root: Record<string, unknown>): boolean {
-  try {
-    const tag = root["_tag"];
-    if (tag === "song") {
-      const arr = (root["arrangement"] as Record<string, unknown>) ?? {};
-      const text = (arr["#text"] ?? arr[""] ?? "") as string;
-      const low = text.toLowerCase().trim();
-      return !["vocals", "showlights", "jvocals"].includes(low);
-    }
-    return tag === "song";
-  } catch {
-    return false;
-  }
-}
-
-export function convertSngToXml(dir: string, rscliPath: string): void {
-  const sngFiles = (fs.readdirSync(dir, { recursive: true }) as string[])
-    .filter((f) => f.endsWith(".sng"));
-
-  if (sngFiles.length === 0) return;
-
-  // Detect platform from directory structure
-  let platform = "pc";
-  for (const sng of sngFiles) {
-    const lower = sng.toLowerCase();
-    if (lower.includes("/macos/") || lower.includes("/mac/")) {
-      platform = "mac";
-      break;
-    }
-  }
-
-  const arrDir = path.join(dir, "songs", "arr");
-  fs.mkdirSync(arrDir, { recursive: true });
-
-  for (const sngRel of sngFiles) {
-    const stem = path.basename(sngRel, ".sng");
-    if (stem.toLowerCase().includes("vocals")) continue;
-
-    const sngFull = path.join(dir, sngRel);
-    const xmlOut = path.join(arrDir, `${stem}.xml`);
-    if (fs.existsSync(xmlOut)) continue;
-
-    try {
-      const result = execSync(
-        `"${rscliPath}" sng2xml "${sngFull}" "${xmlOut}" ${platform}`,
-        { timeout: 30000, stdio: ["ignore", "pipe", "pipe"] },
-      );
-    } catch {
-      // sng2xml failed for this file — skip
-    }
-  }
-}
-
-export async function loadSongFromDirectory(dir: string, rscliPath?: string): Promise<Song> {
-  let xmlFiles: string[];
-
-  // Initial XML scan
-  xmlFiles = (fs.readdirSync(dir, { recursive: true }) as string[])
-    .map((f) => path.join(dir, f))
-    .filter((f) => f.endsWith(".xml") && !f.includes("_showlights") && !f.includes("vocal"));
-
-  // If no arrangement XMLs found, try SNG conversion
-  if (xmlFiles.length === 0 && rscliPath && fs.existsSync(rscliPath)) {
-    convertSngToXml(dir, rscliPath);
-    // Re-scan for converted XMLs
-    xmlFiles = (fs.readdirSync(dir, { recursive: true }) as string[])
-      .map((f) => path.join(dir, f))
-      .filter((f) => f.endsWith(".xml") && !f.includes("_showlights") && !f.includes("vocal"));
-  }
-
-  let title = "", artist = "", album = "";
-  let year = 0, songLength = 0, offset = 0;
-  let beats: Beat[] = [], sections: Section[] = [];
-  const arrangements: Arrangement[] = [];
-
-  function arrangementNameFromFilename(filePath: string): string | undefined {
-    const stem = path.basename(filePath, ".xml").toLowerCase();
-    const parts = stem.split("_");
-    const last = parts[parts.length - 1];
-    if (last in ARRANGEMENT_PRIORITY) {
-      return last.charAt(0).toUpperCase() + last.slice(1);
-    }
-    const match = parts.find((p) => p in ARRANGEMENT_PRIORITY);
-    if (match) return match.charAt(0).toUpperCase() + match.slice(1);
-    return undefined;
-  }
-
-  for (const xmlFile of xmlFiles) {
-    const content = fs.readFileSync(xmlFile, "utf8");
-    const filenameArrName = arrangementNameFromFilename(xmlFile);
-
-    // Try song root (beats, metadata)
-    const root = parseSongRoot(content);
-    if (root && root.beats.length > 0) {
-      title = title || root.title;
-      artist = artist || root.artist;
-      album = album || root.album;
-      year = year || root.year;
-      songLength = songLength || root.songLength;
-      offset = offset || root.offset;
-      beats = beats.length ? beats : [...root.beats];
-      sections = sections.length ? sections : [...root.sections];
-    }
-
-    // Try arrangement
-    try {
-      const arr = parseArrangementXml(content, filenameArrName);
-      if (arr.notes.length > 0 || arr.chords.length > 0 || arr.chordTemplates.length > 0) {
-        if (!title) {
-          const r = parseSongRoot(content);
-          if (r) {
-            title = title || r.title;
-            artist = artist || r.artist;
-            album = album || r.album;
-            year = year || r.year;
-            songLength = songLength || r.songLength;
-            if (!beats.length) beats = [...r.beats];
-            if (!sections.length) sections = [...r.sections];
-          }
-        }
-        arrangements.push(arr);
-      }
-    } catch {
-      // not an arrangement XML
-    }
-  }
-
-  // Lyrics
-  const vocalFiles = (fs.readdirSync(dir, { recursive: true }) as string[])
-    .map((f) => path.join(dir, f))
-    .filter((f) => f.includes("vocal") && f.endsWith(".xml"));
-
-  let lyrics: LyricWord[] = [];
-  if (vocalFiles.length > 0) {
-    try {
-      lyrics = parseLyricsXml(fs.readFileSync(vocalFiles[0], "utf8"));
-    } catch {
-      // ignore
-    }
-  }
-
-  // Try JSON manifests for metadata
-  const manifestDir = path.join(dir, "manifests");
-  if (fs.existsSync(manifestDir)) {
-    for (const f of fs.readdirSync(manifestDir).filter((f) => f.endsWith(".json"))) {
-      try {
-        const raw = JSON.parse(fs.readFileSync(path.join(manifestDir, f), "utf8")) as Record<string, unknown>;
-        const entryVals = Object.values((raw["Entries"] ?? {}) as Record<string, unknown>);
-        const attrs = (entryVals[0] as Record<string, unknown>)?.["Attributes"] as Record<string, unknown>;
-        if (attrs) {
-          title = title || String(attrs["SongName"] ?? "");
-          artist = artist || String(attrs["ArtistName"] ?? "");
-          album = album || String(attrs["AlbumName"] ?? "");
-          year = year || Number(attrs["SongYear"]) || 0;
-        }
-      } catch { /* ignore */ }
-    }
-  }
-
-  return { title, artist, album, year, songLength, offset, beats, sections, arrangements: sortArrangementsByPriority(arrangements), lyrics };
-}

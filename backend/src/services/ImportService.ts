@@ -1,3 +1,4 @@
+import type { FastifyBaseLogger } from "fastify";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import fsSync from "node:fs";
@@ -35,6 +36,7 @@ export class ImportService {
     private readonly config: Config,
     private readonly providers: ProviderRegistry,
     private readonly hooks: HookSystem,
+    private readonly logger: FastifyBaseLogger,
   ) {}
 
   enqueue(filename: string, profileId: number): ImportJob | null {
@@ -164,7 +166,7 @@ export class ImportService {
           coverImageStorageId = artId;
         }
       } catch (err) {
-        console.log(`Failed to extract/store cover art for ${job.filename}: ${err instanceof Error ? err.message : String(err)}`);
+        this.logger.warn({ err, filename: job.filename }, `Failed to extract/store cover art`);
       }
       job.progress = 70;
 
@@ -176,7 +178,7 @@ export class ImportService {
           audioFileStorageId = audioId;
         }
       } catch (err) {
-        console.log(`Failed to extract/store audio for ${job.filename}: ${err instanceof Error ? err.message : String(err)}`);
+        this.logger.warn({ err, filename: job.filename }, `Failed to extract/store audio`);
       }
       job.progress = 80;
 
