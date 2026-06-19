@@ -5,7 +5,7 @@ export { DefaultRenderer } from './DefaultRenderer.js';
 // Re-export from player layer for convenience
 export { SongDataProvider, RendererManager } from '@/features/player';
 export type {
-  HighwayApi, ConnectOptions, Renderer, RenderBundle,
+  HighwayApi, ConnectOptions, CanvasRenderer, RenderBundle,
   DrawHook, NoteStateProvider, NoteState,
   ChartNote, ChartChordNote, ChartChord,
   Beat, Section, Anchor, ChordTemplate,

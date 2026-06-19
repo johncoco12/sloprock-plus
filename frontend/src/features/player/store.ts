@@ -38,6 +38,7 @@ export const usePlayerStore = defineStore('player', () => {
   const savedLoops = ref<Loop[]>([])
 
   const pitchDetectionEnabled = ref<boolean>(false)
+  const tunerMode = ref<boolean>(false)
 
   const sectionResults = ref<SectionResult[]>([])
   const currentSectionIndex = ref<number>(-1)
@@ -83,10 +84,12 @@ export const usePlayerStore = defineStore('player', () => {
         audio.src = newSrc
         audio.load()
       }
-      await new Promise<void>(resolve => {
+      await new Promise<void>((resolve, reject) => {
         if (audio.readyState >= 2) { resolve(); return }
-        const onReady = () => { audio.removeEventListener('canplay', onReady); resolve() }
+        const onReady = () => { audio.removeEventListener('canplay', onReady); audio.removeEventListener('error', onError); resolve() }
+        const onError = () => { audio.removeEventListener('canplay', onReady); audio.removeEventListener('error', onError); reject(new Error('Audio failed to load')) }
         audio.addEventListener('canplay', onReady)
+        audio.addEventListener('error', onError)
       })
     }
 
@@ -178,6 +181,8 @@ export const usePlayerStore = defineStore('player', () => {
     highway.value?.toggleLyrics?.()
   }
 
+
+  function setTunerMode(v: boolean): void { tunerMode.value = v }
 
   function togglePitchDetection(): void {
     if (isPitchRunning()) {
@@ -326,6 +331,7 @@ export const usePlayerStore = defineStore('player', () => {
     togglePlay, seekBy, seekTo, setSpeed, setMastery, setAvOffset, nudgeAvOffset, setVolume, setSongVolume,
     toggleLyrics, setViz,
     togglePitchDetection,
+    tunerMode, setTunerMode,
     setLoopA, setLoopB, clearLoop, saveLoop, loadLoop, deleteLoop,
     syncTime,
     rendererSelection, availableRenderers,

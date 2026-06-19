@@ -1,3 +1,4 @@
+import type { FastifyBaseLogger } from "fastify";
 import type { HookHandler, HookOptions, HookPayload } from "../../domain/interfaces/plugins/PluginContext.js";
 
 export type HookEvent =
@@ -35,6 +36,8 @@ interface MutablePayload extends HookPayload {
 
 export class HookSystem {
   private readonly hooks = new Map<string, HookEntry[]>();
+
+  constructor(private readonly logger: FastifyBaseLogger) {}
 
   register(
     event: string,
@@ -95,7 +98,7 @@ export class HookSystem {
           Object.assign(payload.data, result.data);
         }
       } catch (err) {
-        console.error(`[hooks] ${event} handler from plugin "${entry.pluginId}" threw:`, err);
+        this.logger.error({ err, event, pluginId: entry.pluginId }, `hook handler threw`);
       }
     }
 

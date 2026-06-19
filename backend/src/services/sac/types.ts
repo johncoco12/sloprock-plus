@@ -1,3 +1,5 @@
+// SAC (Slopsmith Audio Connect) — UDP protocol for real-time communication
+// with the companion desktop app (pitch detection, session sync, monitoring).
 import type { WebSocket } from "@fastify/websocket";
 
 

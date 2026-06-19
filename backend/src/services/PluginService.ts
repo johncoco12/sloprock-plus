@@ -25,16 +25,16 @@ export class PluginService {
     const statuses = new Map<string, PluginStatus>(
       this.lifecycle.getStatus().map((s) => [s.id, s]),
     );
-    return this.registry.getAll().map((p) => this._shape(p, statuses.get(p.id)));
+    return this.registry.getAll().map((p) => this.shape(p, statuses.get(p.id)));
   }
 
   getById(id: string) {
     const plugin = this.registry.getById(id);
     const status = this.lifecycle.getStatus().find((s) => s.id === id);
-    return this._shape(plugin, status);
+    return this.shape(plugin, status);
   }
 
-  private _shape(p: ReturnType<PluginRegistry["getAll"]>[number], status?: PluginStatus) {
+  private shape(p: ReturnType<PluginRegistry["getAll"]>[number], status?: PluginStatus) {
     return {
       id: p.id,
       name: p.name,

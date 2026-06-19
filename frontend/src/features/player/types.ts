@@ -201,9 +201,6 @@ export interface CanvasRenderer {
   destroy?(): void;
 }
 
-/** @deprecated Use CanvasRenderer instead. */
-export type Renderer = CanvasRenderer;
-
 
 export interface NoteState {
   state: 'hit' | 'active' | 'miss';
@@ -246,7 +243,7 @@ export interface HighwayApi {
   setLefty(on: boolean): void;
   getLefty(): boolean;
 
-  setRenderer(r: Renderer | null): void;
+  setRenderer(r: CanvasRenderer | null): void;
   isDefaultRenderer(): boolean;
 
   getNotes(): ChartNote[];

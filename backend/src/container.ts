@@ -6,6 +6,8 @@ import { PermissionGroupRepository } from "./infrastructure/db/PermissionGroupRe
 import { StorageService } from "./services/StorageService.js";
 import { ProfileService } from "./services/ProfileService.js";
 import { PermissionsService } from "./services/PermissionsService.js";
+import { SongRepository } from "./infrastructure/db/SongRepository.js";
+import { FavoritesRepository } from "./infrastructure/db/FavoritesRepository.js";
 import { TrackRepository } from "./infrastructure/db/TrackRepository.js";
 import { TrackDataRepository } from "./infrastructure/db/TrackDataRepository.js";
 import { StemsRepository } from "./infrastructure/db/StemsRepository.js";
@@ -20,6 +22,8 @@ import {
   IPermissionsServiceToken,
   IProfileRepositoryToken,
   IPermissionGroupRepositoryToken,
+  ISongRepositoryToken,
+  IFavoritesRepositoryToken,
   ITrackRepositoryToken,
   ITrackDataRepositoryToken,
   IStemsRepositoryToken,
@@ -31,9 +35,7 @@ import type { IStorageProvider } from "./domain/interfaces/providers/IStoragePro
 import type { IStorageService } from "./domain/interfaces/services/IStorageService.js";
 import type { IProfileService } from "./domain/interfaces/services/IProfileService.js";
 import type { IPermissionsService } from "./domain/interfaces/services/IPermissionsService.js";
-import type { IProfileRepository } from "./domain/repositories.js";
-import type { IPermissionGroupRepository } from "./domain/repositories.js";
-import type { ITrackRepository, ITrackDataRepository, IStemsRepository, IStemDataRepository, ILoopRepository } from "./domain/repositories.js";
+import type { IProfileRepository, IPermissionGroupRepository, ISongRepository, IFavoritesRepository, ITrackRepository, ITrackDataRepository, IStemsRepository, IStemDataRepository, ILoopRepository } from "./domain/repositories.js";
 
 export {
   IStorageProviderToken,
@@ -42,6 +44,8 @@ export {
   IPermissionsServiceToken,
   IProfileRepositoryToken,
   IPermissionGroupRepositoryToken,
+  ISongRepositoryToken,
+  IFavoritesRepositoryToken,
   ITrackRepositoryToken,
   ITrackDataRepositoryToken,
   IStemsRepositoryToken,
@@ -65,6 +69,13 @@ export function registerContainer(): DependencyContainer {
 
   container.register<IStorageService>(IStorageServiceToken, {
     useFactory: (c) => new StorageService(c.resolve(IStorageProviderToken)),
+  });
+
+  container.register<ISongRepository>(ISongRepositoryToken, {
+    useFactory: () => new SongRepository(),
+  });
+  container.register<IFavoritesRepository>(IFavoritesRepositoryToken, {
+    useFactory: () => new FavoritesRepository(),
   });
 
   container.register<IProfileRepository>(IProfileRepositoryToken, {

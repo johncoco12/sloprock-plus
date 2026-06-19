@@ -13,6 +13,7 @@ import { useLoop, useTresContext } from '@tresjs/core'
 import * as THREE from 'three'
 import type { RenderBundle } from '@/features/player/types'
 import { renderBundleKey } from '@/features/player/renderers/keys'
+import { usePlayerStore } from '@/features/player/store'
 import {
   K, FOG_START, FOG_END, CAM_H_BASE, CAM_DIST_BASE, REF_ASPECT,
   FOCUS_D, CAM_LERP_BASE, AHEAD, fretMid, sY, computeBPM,
@@ -42,6 +43,7 @@ import { createStringVibrate } from './composables/useStringVibrate'
 import { createHitGlow } from './composables/useHitGlow'
 
 const bundle = inject<ShallowRef<RenderBundle | null>>(renderBundleKey as any)!
+const playerStore = usePlayerStore()
 
 const { scene } = useTresContext()
 scene.value.fog = new THREE.Fog(0x101820, FOG_START * 0.8, FOG_END * 1.2)
@@ -172,29 +174,46 @@ onBeforeRender(() => {
       if (n.f > maxF) maxF = n.f
     }
   }
-  if (count > 0.01) {
-    tgtX = sumX / count
-  }
-  const span = maxF > minF ? maxF - minF : 4
-  tgtDist = (65 + Math.max(span, 4) * 3 + Math.max(0, 5 - minF) * 4) * K
+  const isTunerMode = playerStore.tunerMode
 
-  // BPM-scaled lerp
+  if (isTunerMode && nutHeadstock.headstockCenter) {
+    // Tuner mode: aim camera at the headstock close-up
+    const hs = nutHeadstock.headstockCenter
+    tgtX = hs.x + 45 * K
+    tgtDist = CAM_DIST_BASE * 0.42
+  } else {
+    if (count > 0.01) {
+      tgtX = sumX / count
+    }
+    const span = maxF > minF ? maxF - minF : 4
+    tgtDist = (65 + Math.max(span, 4) * 3 + Math.max(0, 5 - minF) * 4) * K
+  }
+
+  // BPM-scaled lerp — faster when entering/leaving tuner mode for snappier transitions
   const bpm = computeBPM(b.beats, now)
-  const lerp = CAM_LERP_BASE * Math.max(bpm, 60) / 120
+  const lerp = isTunerMode
+    ? 0.05
+    : CAM_LERP_BASE * Math.max(bpm, 60) / 120
 
   curX += (tgtX - curX) * lerp
   curDist += (tgtDist - curDist) * lerp
 
   const dist = curDist * aspectScale
   const h = CAM_H_BASE * (dist / CAM_DIST_BASE)
-  const shoulderOffset = 20 * K
 
-  cam.position.set(curX + shoulderOffset, h * 0.95, dist * 0.75)
-
-  const fretMidY = (sY(0, stringCount, inverted) + sY(stringCount - 1, stringCount, inverted)) / 2
-  tgtLookY = fretMidY * 0.3
-  curLookY += (tgtLookY - curLookY) * lerp
-  cam.lookAt(curX, curLookY, -FOCUS_D * 0.35)
+  if (isTunerMode && nutHeadstock.headstockCenter) {
+    const hs = nutHeadstock.headstockCenter
+    // No shoulder offset — camera frames the headstock centred
+    cam.position.set(curX, CAM_H_BASE * 0.48, dist * 0.80)
+    cam.lookAt(hs.x, hs.y, 0)
+  } else {
+    const shoulderOffset = 20 * K
+    cam.position.set(curX + shoulderOffset, h * 0.95, dist * 0.75)
+    const fretMidY = (sY(0, stringCount, inverted) + sY(stringCount - 1, stringCount, inverted)) / 2
+    tgtLookY = fretMidY * 0.3
+    curLookY += (tgtLookY - curLookY) * lerp
+    cam.lookAt(curX, curLookY, -FOCUS_D * 0.35)
+  }
 
   // ── Update object pools ───────────────────────────────────────────────────
   notePool.update(b)
@@ -213,7 +232,7 @@ onBeforeRender(() => {
   fretInlays.update(b)
   stringGlow.update(b)
   sectionLabels.update(b)
-  nutHeadstock.update(b)
+  nutHeadstock.update(b, isTunerMode)
   domeParticles.update(b)
   noteDetect.update(b)
   hitImpact.update(b)

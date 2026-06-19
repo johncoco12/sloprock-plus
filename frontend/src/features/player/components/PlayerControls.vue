@@ -226,7 +226,7 @@ function dismissPrompt(): void {
           class="player-btn"
           :class="{ active: tunerOpen }"
           :title="$t('player.controls.tunerTitle')"
-          @click="tunerOpen = !tunerOpen; mixerOpen = false; sacOpen = false"
+          @click="tunerOpen = !tunerOpen; mixerOpen = false; sacOpen = false; player.setTunerMode(tunerOpen)"
         >
           <Gauge :size="15" />
         </button>

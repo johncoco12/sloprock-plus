@@ -13,6 +13,8 @@ import {
   IProfileServiceToken,
   IPermissionsServiceToken,
   IProfileRepositoryToken,
+  ISongRepositoryToken,
+  IFavoritesRepositoryToken,
   ITrackRepositoryToken,
   ITrackDataRepositoryToken,
   IStemsRepositoryToken,
@@ -25,11 +27,8 @@ import { SacBeaconService }      from "./services/sac/SacBeaconService.js";
 import { SacSessionService }     from "./services/sac/SacSessionService.js";
 import { PitchProcessorService } from "./services/sac/PitchProcessorService.js";
 import { sacRoutes }             from "./api/routes/sac.js";
-import type { IProfileRepository } from "./domain/repositories.js";
+import type { IProfileRepository, ISongRepository, IFavoritesRepository } from "./domain/repositories.js";
 
-import { SongRepository } from "./infrastructure/db/SongRepository.js";
-import { FavoritesRepository } from "./infrastructure/db/FavoritesRepository.js";
-import { LoopRepository } from "./infrastructure/db/LoopRepository.js";
 import { PluginRegistry } from "./infrastructure/plugins/PluginRegistry.js";
 import { HookSystem } from "./infrastructure/plugins/HookSystem.js";
 import { ProviderRegistry } from "./infrastructure/plugins/ProviderRegistry.js";
@@ -68,15 +67,14 @@ import { highwayRoutes } from "./api/routes/highway.js";
 import { setupRoutes } from "./api/routes/setup.js";
 
 export async function buildServer() {
-  const songRepo = new SongRepository();
-  const favRepo = new FavoritesRepository();
-  const loopRepo = new LoopRepository();
   const pluginRegistry = new PluginRegistry();
 
   const storageService     = container.resolve(IStorageServiceToken) as StorageService;
   const profileService     = container.resolve(IProfileServiceToken) as IProfileService;
   const permissionsService = container.resolve(IPermissionsServiceToken) as IPermissionsService;
   const profileRepo        = container.resolve(IProfileRepositoryToken) as IProfileRepository;
+  const songRepo           = container.resolve(ISongRepositoryToken) as ISongRepository;
+  const favRepo            = container.resolve(IFavoritesRepositoryToken) as IFavoritesRepository;
 
   const sacBeacon  = new SacBeaconService(config.sacServerName, config.sacHttpPort, undefined, undefined, config.sacServerIp);
   const sacSession = new SacSessionService(profileRepo);
@@ -101,18 +99,10 @@ export async function buildServer() {
 
   pluginRegistry.discover(config.pluginsBuiltinDir, config.pluginsUserDir);
 
-  const hookSystem = new HookSystem();
   const providerRegistry = new ProviderRegistry();
   const permissionRegistry = new PermissionRegistry();
   const pluginDbFactory = new PluginDbFactory();
 
-  const importService = new ImportService(
-    songRepo, container.resolve(ITrackRepositoryToken),
-    container.resolve(ITrackDataRepositoryToken),
-    container.resolve(IStemsRepositoryToken),
-    container.resolve(IStemDataRepositoryToken),
-    storageService, config, providerRegistry, hookSystem,
-  );
   const highwayService = new HighwayService(
     container.resolve(ITrackRepositoryToken),
     container.resolve(ITrackDataRepositoryToken),
@@ -129,6 +119,15 @@ export async function buildServer() {
       ? { level: config.logLevel, transport: { target: "pino-pretty" } }
       : { level: config.logLevel },
   });
+
+  const hookSystem = new HookSystem(fastify.log);
+  const importService = new ImportService(
+    songRepo, container.resolve(ITrackRepositoryToken),
+    container.resolve(ITrackDataRepositoryToken),
+    container.resolve(IStemsRepositoryToken),
+    container.resolve(IStemDataRepositoryToken),
+    storageService, config, providerRegistry, hookSystem, fastify.log,
+  );
 
   // RouteRegistrar needs the fastify instance, but start() is called after
   // routes so that plugin-defined routes still register in time.

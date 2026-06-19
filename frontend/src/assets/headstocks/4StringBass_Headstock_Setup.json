@@ -1,0 +1,22 @@
+{
+  "model": "4StringBass_Headstock.glb",
+  "stringCount": 4,
+  "rootEmpty": "Root",
+  "stringLabelEmpties": [
+    { "empty": "E_String_Label", "string": 0 },
+    { "empty": "A_String_Label", "string": 1 },
+    { "empty": "D_String_Label", "string": 2 },
+    { "empty": "G_String_Label", "string": 3 }
+  ],
+  "tuningUIEmpty": "Tuning_UI",
+  "transform": {
+    "rotation": [0.0, 3.14159265, 0.0],
+    "scale": 0.1,
+    "nutOffset": [0.0, 0.0, -0.025],
+    "sceneOffset": [0.0, 0.0, 0.0]
+  },
+  "gauge": {
+    "radius": 5.5,
+    "offset": [0.0, 0.0, 0.0]
+  }
+}
