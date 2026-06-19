@@ -38,6 +38,7 @@ export const usePlayerStore = defineStore('player', () => {
   const savedLoops = ref<Loop[]>([])
 
   const pitchDetectionEnabled = ref<boolean>(false)
+  const tunerMode = ref<boolean>(false)
 
   const sectionResults = ref<SectionResult[]>([])
   const currentSectionIndex = ref<number>(-1)
@@ -180,6 +181,8 @@ export const usePlayerStore = defineStore('player', () => {
     highway.value?.toggleLyrics?.()
   }
 
+
+  function setTunerMode(v: boolean): void { tunerMode.value = v }
 
   function togglePitchDetection(): void {
     if (isPitchRunning()) {
@@ -328,6 +331,7 @@ export const usePlayerStore = defineStore('player', () => {
     togglePlay, seekBy, seekTo, setSpeed, setMastery, setAvOffset, nudgeAvOffset, setVolume, setSongVolume,
     toggleLyrics, setViz,
     togglePitchDetection,
+    tunerMode, setTunerMode,
     setLoopA, setLoopB, clearLoop, saveLoop, loadLoop, deleteLoop,
     syncTime,
     rendererSelection, availableRenderers,
