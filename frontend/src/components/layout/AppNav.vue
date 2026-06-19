@@ -29,11 +29,11 @@ const pluginsNavOpen      = ref<boolean>(false)
 const settingsOpen        = ref<boolean>(false)
 const audioSettingsOpen   = ref<boolean>(false)
 const adminOpen           = ref<boolean>(false)
-const mobileOpen     = ref<boolean>(false)
-const fileInput      = ref<HTMLInputElement | null>(null)
-const uploadStatus   = ref<string>('')
-const uploading      = ref(false)
-const uploadProgress = ref(0)
+const mobileOpen          = ref<boolean>(false)
+const fileInput           = ref<HTMLInputElement | null>(null)
+const uploadStatus        = ref<string>('')
+const uploading           = ref(false)
+const uploadProgress      = ref(0)
 
 type NavLink = { name: string; params?: { id: string }; label: string; icon: unknown }
 
@@ -84,8 +84,9 @@ async function pollJob(jobId: string): Promise<void> {
 }
 
 async function handleUpload(e: Event): Promise<void> {
-  const files = (e.target as HTMLInputElement).files
-  if (!files?.length) return
+  const files = Array.from((e.target as HTMLInputElement).files ?? [])
+  ;(e.target as HTMLInputElement).value = ''
+  if (!files.length) return
   uploading.value = true
   uploadProgress.value = 0
   uploadStatus.value = t('nav.uploading')
@@ -104,13 +105,9 @@ async function handleUpload(e: Event): Promise<void> {
     }
     const data = await res.json()
     const jobs: { jobId: string }[] = data.jobs ?? (data.jobId ? [{ jobId: data.jobId }] : [])
-    if (jobs.length === 0) {
-      uploadStatus.value = t('nav.uploadInvalid')
-      return
-    }
+    if (jobs.length === 0) { uploadStatus.value = t('nav.uploadInvalid'); return }
     uploadStatus.value = t('nav.processing')
-    const polls = jobs.map(j => pollJob(j.jobId))
-    await Promise.all(polls)
+    await Promise.all(jobs.map(j => pollJob(j.jobId)))
     if (uploadStatus.value.startsWith(t('nav.processing')) || uploadStatus.value === t('nav.uploadDone')) {
       uploadStatus.value = t('nav.uploadDone')
     }
@@ -119,7 +116,6 @@ async function handleUpload(e: Event): Promise<void> {
   } finally {
     uploading.value = false
     setTimeout(() => { uploadStatus.value = ''; uploadProgress.value = 0 }, 3000)
-    ;(e.target as HTMLInputElement).value = ''
   }
 }
 </script>

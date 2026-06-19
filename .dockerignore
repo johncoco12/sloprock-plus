@@ -34,6 +34,8 @@ plugins/*/
 !plugins/format_sloppak/**
 !plugins/format_loose/
 !plugins/format_loose/**
+!plugins/format_gp/
+!plugins/format_gp/**
 
 # Strip developer artifacts even inside whitelisted trees
 **/__pycache__/

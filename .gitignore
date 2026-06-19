@@ -33,7 +33,8 @@ plugins/highway_3d/__pycache__/
 !plugins/format_loose/**
 plugins/format_sloppak/dist/
 plugins/format_loose/dist/
-
+!plugins/format_gp/**
+!plugins/format_gp/
 
 node_modules/
 test-results/

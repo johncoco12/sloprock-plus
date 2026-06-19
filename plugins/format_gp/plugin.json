@@ -1,0 +1,10 @@
+{
+  "id": "format_gp",
+  "name": "Guitar Pro Format",
+  "version": "1.0.0",
+  "bundled": true,
+  "private": true,
+  "server": "index.js",
+  "component": "client.js",
+  "dependsOn": []
+}

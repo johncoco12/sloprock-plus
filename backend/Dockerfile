@@ -49,6 +49,9 @@ WORKDIR /repo
 COPY backend/package.json backend/package-lock.json ./backend/
 RUN cd backend && npm ci
 
+COPY plugins/format_gp/package.json plugins/format_gp/package-lock.json ./plugins/format_gp/
+RUN cd plugins/format_gp && npm ci
+
 COPY backend/scripts/ ./backend/scripts/
 COPY backend/src/ ./backend/src/
 COPY plugins/ ./plugins/

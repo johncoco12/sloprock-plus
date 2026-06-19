@@ -1,0 +1,9 @@
+{
+  "name": "slopsmith-plugin-format-gp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@coderline/alphatab": "^1.3.0"
+  }
+}

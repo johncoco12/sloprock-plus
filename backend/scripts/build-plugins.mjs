@@ -35,6 +35,15 @@ const PLUGINS = [
     ],
     outdir: "plugins/format_loose/dist",
   },
+  {
+    name: "format_gp",
+    entryPoints: [
+      "plugins/format_gp/src/GuitarProFormatProvider.ts",
+      "plugins/format_gp/src/GuitarProImportRoute.ts",
+    ],
+    outdir: "plugins/format_gp/dist",
+    extraNodePaths: [path.join(repoRoot, "plugins/format_gp/node_modules")],
+  },
 ];
 
 const shared = {
@@ -60,6 +69,10 @@ for (const plugin of PLUGINS) {
     entryPoints: plugin.entryPoints.map((e) => path.join(repoRoot, e)),
     outdir: path.join(repoRoot, plugin.outdir),
     absWorkingDir: repoRoot,
+    nodePaths: [
+      ...shared.nodePaths,
+      ...(plugin.extraNodePaths ?? []),
+    ],
   });
 }
 
