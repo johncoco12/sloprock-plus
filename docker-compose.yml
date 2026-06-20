@@ -52,6 +52,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+      plugin-builder:
+        condition: service_completed_successfully
     volumes:
       - ${DLC_PATH:-./dlc}:/dlc
       - app-config:/config
@@ -93,8 +95,6 @@ services:
       dockerfile: Dockerfile.plugin-builder
     volumes:
       - ./plugins:/repo/plugins
-    profiles:
-      - build-plugins
 
   frontend:
     build: ./frontend

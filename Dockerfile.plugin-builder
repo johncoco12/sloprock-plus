@@ -47,6 +47,8 @@ COPY backend/tsconfig.json ./backend/
 COPY plugins/ ./plugins/
 
 CMD bash -c " \
+    echo '==> Installing format_gp deps...' && \
+    npm ci --prefix /repo/plugins/format_gp && \
     echo '==> Building pitch_yin WASM...' && \
     bash /repo/plugins/pitch_yin/wasm/build.sh && \
     echo '==> Building TypeScript plugins...' && \
