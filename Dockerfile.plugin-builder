@@ -1,0 +1,53 @@
+# Plugin build container
+#
+# Compiles all TypeScript plugins (format_gp, format_sloppak, format_loose)
+# and the pitch_yin WASM module without requiring Node.js or Emscripten
+# to be installed on the host.
+#
+# Build the image once (or when backend deps change):
+#
+#   docker build -f Dockerfile.plugin-builder -t slopsmith-plugin-builder .
+#
+# Recompile all plugins (output lands back in your working tree):
+#
+#   docker run --rm -v "$(pwd)/plugins:/repo/plugins" slopsmith-plugin-builder
+#
+# The mount shadows the baked-in plugins/ layer so all compiled outputs
+# (dist/ files and the WASM module) are written directly to your checkout.
+
+# emscripten/emsdk is Debian-based and already ships emcc + a bundled Node.
+# We layer Node 20 on top so npm/npx use a known-good version for esbuild.
+FROM emscripten/emsdk:latest
+WORKDIR /repo
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl ca-certificates \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Backend deps first — esbuild lives here alongside the shared TypeScript
+# types that plugins import from backend/src/.
+COPY backend/package.json backend/package-lock.json ./backend/
+RUN cd backend && npm ci
+
+# format_gp has its own runtime dep (@coderline/alphatab) that gets bundled
+# at compile time and needs its own node_modules.
+COPY plugins/format_gp/package.json plugins/format_gp/package-lock.json ./plugins/format_gp/
+RUN cd plugins/format_gp && npm ci
+
+# Backend source and the TypeScript build script.
+COPY backend/scripts/ ./backend/scripts/
+COPY backend/src/    ./backend/src/
+COPY backend/tsconfig.json ./backend/
+
+# Fallback copy of plugins so the image is self-contained when run without
+# a volume mount (e.g. in CI).  When the caller mounts their working-tree
+# plugins/ directory the mount takes precedence and outputs go to the host.
+COPY plugins/ ./plugins/
+
+CMD bash -c " \
+    echo '==> Building pitch_yin WASM...' && \
+    bash /repo/plugins/pitch_yin/wasm/build.sh && \
+    echo '==> Building TypeScript plugins...' && \
+    node /repo/backend/scripts/build-plugins.mjs"
